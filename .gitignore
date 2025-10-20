@@ -1,0 +1,13 @@
+node_modules
+out
+include
+*.tsbuildinfo
+
+*.rbxl
+*.rbxl.lock
+
+*.rbxlx
+*.rbxlx.lock
+
+flamework.build
+wally.lock

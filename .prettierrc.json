@@ -1,0 +1,22 @@
+{
+	"$schema": "https://json.schemastore.org/prettierrc",
+
+	"printWidth": 120,
+	"tabWidth": 4,
+	"trailingComma": "all",
+	"singleQuote": false,
+	"useTabs": true,
+	"semi": true,
+
+	"overrides": [
+		{
+			"files": "*.tsx",
+			"options": {
+				"parser": "typescript"
+			}
+		}
+	],
+
+	"importOrderParserPlugins": ["typescript", "jsx", "decorators-legacy"],
+	"plugins": ["@trivago/prettier-plugin-sort-imports"]
+}

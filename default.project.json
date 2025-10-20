@@ -1,0 +1,126 @@
+{
+	"name": "roblox-ts-game",
+	"globIgnorePaths": ["**/package.json", "**/tsconfig.json"],
+	"tree": {
+		"$className": "DataModel",
+		"ServerScriptService": {
+			"$className": "ServerScriptService",
+			"TS": {
+				"$path": "out/server"
+			}
+		},
+		"ReplicatedStorage": {
+			"$className": "ReplicatedStorage",
+			"rbxts_include": {
+				"$path": "include",
+				"node_modules": {
+					"$className": "Folder",
+					"@rbxts": {
+						"$path": "node_modules/@rbxts"
+					},
+					"@flamework": {
+						"$path": "node_modules/@flamework"
+					}
+				}
+			},
+			"TS": {
+				"$path": "out/shared"
+			}
+		},
+		"StarterPlayer": {
+			"$className": "StarterPlayer",
+			"StarterPlayerScripts": {
+				"$className": "StarterPlayerScripts",
+				"TS": {
+					"$path": "out/client"
+				}
+			}
+		},
+		"Workspace": {
+			"$className": "Workspace",
+			"$properties": {
+				"FilteringEnabled": true
+			},
+			"BasePart": {
+				"$className": "Part",
+				"$properties": {
+					"Color": [0.10588, 0.16471, 0.20784],
+					"Locked": true,
+					"Anchored": true,
+					"CanCollide": false,
+					"Transparency": 1,
+					"Size": [500, 1, 500],
+					"Position": [0, -0.5, 0],
+					"TopSurface": "Smooth",
+					"BottomSurface": "Smooth"
+				},
+				"Texture": {
+					"$className": "Texture",
+					"$properties": {
+						"Color3": [1, 1, 1],
+						"StudsPerTileU": 8,
+						"StudsPerTileV": 8,
+						"Transparency": 0.8,
+						"Texture": "rbxassetid://7744836051",
+						"Face": "Top"
+					}
+				}
+			}
+		},
+		"Lighting": {
+			"$className": "Lighting",
+			"Sky": {
+				"$className": "Sky",
+				"$properties": {
+					"SkyboxBk": "http://www.roblox.com/asset/?id=150335574",
+					"SkyboxDn": "http://www.roblox.com/asset/?id=150335585",
+					"SkyboxFt": "http://www.roblox.com/asset/?id=150335628",
+					"SkyboxLf": "http://www.roblox.com/asset/?id=150335620",
+					"SkyboxRt": "http://www.roblox.com/asset/?id=150335610",
+					"SkyboxUp": "http://www.roblox.com/asset/?id=150335642",
+					"SunAngularSize": 10
+				}
+			},
+			"Bloom": {
+				"$className": "BloomEffect",
+				"$properties": {
+					"Intensity": 0.85,
+					"Size": 20,
+					"Threshold": 0.8
+				}
+			},
+			"Blur": {
+				"$className": "BlurEffect",
+				"$properties": {
+					"Size": 4
+				}
+			},
+			"ColorCorrection": {
+				"$className": "ColorCorrectionEffect",
+				"$properties": {
+					"Contrast": 0.2,
+					"Saturation": 0.3
+				}
+			},
+			"SunRays": {
+				"$className": "SunRaysEffect",
+				"$properties": {
+					"Intensity": 0.05,
+					"Spread": 0.06
+				}
+			}
+		},
+		"HttpService": {
+			"$className": "HttpService",
+			"$properties": {
+				"HttpEnabled": true
+			}
+		},
+		"SoundService": {
+			"$className": "SoundService",
+			"$properties": {
+				"RespectFilteringEnabled": true
+			}
+		}
+	}
+}
