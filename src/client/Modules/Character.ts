@@ -2,7 +2,7 @@ import { Character } from "@/shared/Character";
 import { Players, RunService } from "@rbxts/services";
 
 class ClientCharacter extends Character<{ moved: BindableEvent<(position: Vector3) => void> }> {
-	Moved: RBXScriptSignal<(position: Vector3) => void>;
+	readonly Moved: RBXScriptSignal<(position: Vector3) => void>;
 
 	constructor(player: Player) {
 		super(player);
@@ -10,10 +10,10 @@ class ClientCharacter extends Character<{ moved: BindableEvent<(position: Vector
 		this.signals.moved = new Instance("BindableEvent");
 		this.Moved = this.signals.moved.Event;
 
-		this.setMovedEvent();
+		this.initMovedEvent();
 	}
 
-	private setMovedEvent = () => {
+	private initMovedEvent = () => {
 		let previousPosition = Vector3.zero;
 
 		this.connections.push(
