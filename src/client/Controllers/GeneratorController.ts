@@ -1,4 +1,4 @@
-import { character } from "../Modules/Character";
+import { character } from "../Components/Character";
 import { Chunk } from "@/shared/Chunk";
 import { Controller, OnStart } from "@flamework/core";
 import { RunService, Workspace } from "@rbxts/services";
@@ -10,12 +10,13 @@ class GeneratorController implements OnStart {
 
 	private static folder = new Instance("Folder", Workspace);
 
-	private static chunks = new Map<string, Chunk>();
 	private static desired = new Set<string>();
 	private static lastChunkPos?: Vector3;
 	private static queueToLoad = new Array<{ key: string; pos: Vector3 }>();
 	private static queueToUnload = new Array<string>();
 	private static moveDebounce = false;
+
+	static chunks = new Map<string, Chunk>();
 
 	onStart() {
 		RunService.Heartbeat.Connect(() => GeneratorController.processQueues());

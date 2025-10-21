@@ -1,4 +1,4 @@
-import { character } from "@/client/Modules/Character";
+import { character } from "@/client/Components/Character";
 import { Block } from "@/shared/Block";
 import React from "@rbxts/react";
 import { useEffect, useState } from "@rbxts/react";

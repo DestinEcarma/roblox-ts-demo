@@ -1,4 +1,4 @@
-import { character } from "../Modules/Character";
+import { character } from "../Components/Character";
 import { Controller, OnStart } from "@flamework/core";
 import { UserInputService } from "@rbxts/services";
 
