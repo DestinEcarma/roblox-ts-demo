@@ -1,6 +1,11 @@
 class Block {
 	static readonly BLOCK_SIZE = new Vector3(8, 8, 8);
 	static readonly HALF_BLOCK_SIZE = Block.BLOCK_SIZE.div(2);
+	static readonly HALF_XZ_BLOCK_SIZE = new Vector3(
+		Block.HALF_BLOCK_SIZE.X,
+		Block.BLOCK_SIZE.Y,
+		Block.HALF_BLOCK_SIZE.Z,
+	);
 
 	private static template: Part;
 
@@ -21,26 +26,37 @@ class Block {
 		this.block = Block.template.Clone();
 		this.Health = health;
 
-		this.block.CFrame = new CFrame(position);
+		this.block.Position = position;
 	}
 
-	readonly Mine = (damage: number) => {
+	Mine(damage: number) {
 		if (this.Health > 0) {
 			this.Health = math.clamp(this.Health - damage, 0, this.Health);
+
+			if (this.Health === 0) {
+				this.block.Destroy();
+				return true;
+			}
 		}
-	};
 
-	readonly setParent = (parent: Instance) => {
+		return false;
+	}
+
+	setParent(parent: Instance) {
 		this.block.Parent = parent;
-	};
+	}
 
-	readonly setColor = (color: Color3) => {
+	setColor(color: Color3) {
 		this.block.Color = color;
-	};
+	}
 
-	static InBlockPosition = (position: Vector3) => {
-		return position.add(Block.HALF_BLOCK_SIZE).div(Block.BLOCK_SIZE).Floor();
-	};
+	Destroy() {
+		this.block.Destroy();
+	}
+
+	static InBlockPosition(position: Vector3) {
+		return position.add(Block.HALF_XZ_BLOCK_SIZE).div(Block.BLOCK_SIZE).Floor();
+	}
 }
 
 export { Block };

@@ -41,6 +41,9 @@
 			"$properties": {
 				"FilteringEnabled": true
 			},
+			"Debug": {
+				"$className": "Folder"
+			},
 			"BasePart": {
 				"$className": "Part",
 				"$properties": {
