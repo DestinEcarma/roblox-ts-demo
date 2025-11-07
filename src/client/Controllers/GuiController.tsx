@@ -13,7 +13,7 @@ class GuiController implements OnStart {
 
 		root.render(
 			createPortal(
-				<screengui>
+				<screengui ResetOnSpawn={false}>
 					<Coordinate />
 				</screengui>,
 				this.playerGui,
