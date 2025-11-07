@@ -16,18 +16,16 @@ class ClientCharacter extends Character<{ moved: BindableEvent<(position: Vector
 	private initMovedEvent = () => {
 		let previousPosition = Vector3.zero;
 
-		this.connections.push(
-			RunService.Heartbeat.Connect(() => {
-				if (!this.RootPart) return;
+		this.trove.connect(RunService.Heartbeat, () => {
+			if (!this.RootPart) return;
 
-				const position = this.RootPart.Position;
+			const position = this.RootPart.Position;
 
-				if (previousPosition !== position) {
-					previousPosition = position;
-					this.signals.moved.Fire(position);
-				}
-			}),
-		);
+			if (previousPosition !== position) {
+				previousPosition = position;
+				this.signals.moved.Fire(position);
+			}
+		});
 	};
 }
 

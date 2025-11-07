@@ -1,4 +1,5 @@
 import { Workspace } from "@rbxts/services";
+import { Trove } from "@rbxts/trove";
 
 type BaseSignals = {
 	spawned: BindableEvent<(character: Model) => void>;
@@ -7,7 +8,7 @@ type BaseSignals = {
 };
 
 class Character<S extends Record<string, BindableEvent>> {
-	protected connections = new Array<RBXScriptConnection>();
+	protected trove = new Trove();
 	protected signals = {
 		spawned: new Instance("BindableEvent"),
 		humanoidAdded: new Instance("BindableEvent"),
@@ -35,22 +36,22 @@ class Character<S extends Record<string, BindableEvent>> {
 		}
 
 		// Track when a new character is added
-		this.connections.push(player.CharacterAdded.Connect(this.onCharacterAdded));
+		this.trove.connect(player.CharacterAdded, this.onCharacterAdded);
 
 		// Track when character has spawned
-		this.connections.push(this.Spawned.Connect(this.onSpawned));
+		this.trove.connect(this.Spawned, this.onSpawned);
 
 		// Disconnect the connection when the player's parent is not Players
-		this.connections.push(player.AncestryChanged.Connect(this.onAncestoryChanged));
+		this.trove.connect(player.AncestryChanged, this.onAncestoryChanged);
+
+		// Add signals to trove to handle clean up
+		this.trove.add(this.signals.humanoidAdded);
+		this.trove.add(this.signals.rootPart);
+		this.trove.add(this.signals.spawned);
 	}
 
 	readonly Destroy = () => {
-		this.connections.forEach((connection) => connection.Disconnect());
-		this.connections.clear();
-
-		for (const [, signal] of pairs(this.signals as Record<string, BindableEvent>)) {
-			signal.Destroy();
-		}
+		this.trove.clean();
 	};
 
 	private fireSpawned = (character: Model) => {
@@ -76,8 +77,12 @@ class Character<S extends Record<string, BindableEvent>> {
 					connection.Disconnect();
 					task.wait();
 					this.fireSpawned(character);
+					this.trove.remove(connection);
 				}
 			});
+
+			// Add to trove just in-case the conneciton was never disconnected
+			this.trove.add(connection);
 		}
 	};
 
