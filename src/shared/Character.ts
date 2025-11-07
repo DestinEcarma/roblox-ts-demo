@@ -19,6 +19,7 @@ class Character<S extends Record<string, BindableEvent>> {
 	readonly HumanoidAdded = this.signals.humanoidAdded.Event;
 	readonly RootPartAdded = this.signals.rootPart.Event;
 
+	Model?: Model;
 	RootPart?: BasePart;
 
 	constructor(player: Player) {
@@ -35,14 +36,14 @@ class Character<S extends Record<string, BindableEvent>> {
 			if (rootPart) this.fireRootPartAdded(rootPart);
 		}
 
+		// Set Model to character when character spawned
+		this.trove.connect(this.Spawned, (character) => (this.Model = character));
+
 		// Track when a new character is added
 		this.trove.connect(player.CharacterAdded, this.onCharacterAdded);
 
 		// Track when character has spawned
 		this.trove.connect(this.Spawned, this.onSpawned);
-
-		// Disconnect the connection when the player's parent is not Players
-		this.trove.connect(player.AncestryChanged, this.onAncestoryChanged);
 
 		// Add signals to trove to handle clean up
 		this.trove.add(this.signals.humanoidAdded);
@@ -50,21 +51,21 @@ class Character<S extends Record<string, BindableEvent>> {
 		this.trove.add(this.signals.spawned);
 	}
 
-	readonly Destroy = () => {
+	Destroy() {
 		this.trove.clean();
-	};
+	}
 
-	private fireSpawned = (character: Model) => {
+	private fireSpawned(character: Model) {
 		this.signals.spawned.Fire(character);
-	};
+	}
 
-	private fireHumanoidAdded = (humanoid: Humanoid) => {
+	private fireHumanoidAdded(humanoid: Humanoid) {
 		this.signals.humanoidAdded.Fire(humanoid);
-	};
+	}
 
-	private fireRootPartAdded = (humanoidRootPart: BasePart) => {
+	private fireRootPartAdded(humanoidRootPart: BasePart) {
 		this.signals.rootPart.Fire(humanoidRootPart);
-	};
+	}
 
 	private onCharacterAdded = (character: Model) => {
 		if (character?.IsDescendantOf(Workspace)) {
@@ -117,12 +118,6 @@ class Character<S extends Record<string, BindableEvent>> {
 					this.fireRootPartAdded(character.PrimaryPart);
 				}
 			});
-		}
-	};
-
-	private onAncestoryChanged = (_: Instance, parent?: Instance) => {
-		if (!parent?.IsA("Players")) {
-			this.Destroy();
 		}
 	};
 }

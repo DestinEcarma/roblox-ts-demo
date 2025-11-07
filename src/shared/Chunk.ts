@@ -54,7 +54,24 @@ class Chunk {
 
 	static InChunkPosition = (position: Vector3) => {
 		return position.sub(Chunk.ORIGIN).div(Chunk.CHUNK_WORLD_SIZE).Floor();
-	};
+	}
+
+	private createBlock(inChunkPosition: Vector3) {
+		const chunkPosition = this.chunk.mul(Chunk.CHUNK_WORLD_SIZE);
+		const blockPosition = new Vector3(x, Chunk.CHUNK_SIZE.Y - 1, z)
+			.mul(Block.BLOCK_SIZE)
+			.add(Block.HALF_BLOCK_SIZE);
+		const position = Chunk.ORIGIN.add(chunkPosition.add(blockPosition));
+
+		const block = new Block(position, 100);
+
+		const key = Chunk.key(Block.InBlockPosition(position));
+		this.blocks.set(key, block);
+	}
+
+	private static key(position: Vector3) {
+		return `${position.X},${position.Y},${position.Z}`;
+	}
 }
 
 export { Chunk };

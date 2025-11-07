@@ -11,12 +11,15 @@ class ClientCharacter extends Character<{ moved: BindableEvent<(position: Vector
 		this.Moved = this.signals.moved.Event;
 
 		this.initMovedEvent();
+
+		// Add signals to trove to handle clean up
+		this.trove.add(this.signals.moved);
 	}
 
-	private initMovedEvent = () => {
+	private initMovedEvent() {
 		let previousPosition = Vector3.zero;
 
-		this.trove.connect(RunService.Heartbeat, () => {
+		RunService.Heartbeat.Connect(() => {
 			if (!this.RootPart) return;
 
 			const position = this.RootPart.Position;
@@ -26,7 +29,7 @@ class ClientCharacter extends Character<{ moved: BindableEvent<(position: Vector
 				this.signals.moved.Fire(position);
 			}
 		});
-	};
+	}
 }
 
 const character = new ClientCharacter(Players.LocalPlayer);
