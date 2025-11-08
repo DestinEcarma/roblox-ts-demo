@@ -100,13 +100,7 @@ class Chunk {
 		const block = this.blocks.get(key);
 
 		if (!block) {
-			let pendingDamage = this.pendingMine.get(key);
-
-			if (pendingDamage === undefined) {
-				pendingDamage = 0;
-			}
-
-			this.pendingMine.set(key, pendingDamage + damage);
+			this.pendingMine.set(key, (this.pendingMine.get(key) ?? 0) + damage);
 
 			return;
 		}
