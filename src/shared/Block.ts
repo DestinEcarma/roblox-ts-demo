@@ -18,14 +18,12 @@ class Block {
 		Block.template = template;
 	}
 
-	private block: Part;
+	private block = Block.template.Clone();
 
-	Health: number;
-
-	constructor(position: Vector3, health: number) {
-		this.block = Block.template.Clone();
-		this.Health = health;
-
+	constructor(
+		position: Vector3,
+		public Health: number,
+	) {
 		this.block.Position = position;
 	}
 

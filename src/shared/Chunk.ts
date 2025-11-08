@@ -19,8 +19,7 @@ class Chunk {
 		new Vector3(0, 0, -1).mul(Block.BLOCK_SIZE),
 	];
 
-	private chunk: Vector3;
-	private folder: Folder;
+	private folder = new Instance("Folder");
 
 	private neighbors = new Map<string, Chunk>();
 
@@ -30,10 +29,7 @@ class Chunk {
 	private blocks = new Map<string, Block>();
 	private generatedBlocks = new Map<string, boolean>();
 
-	constructor(chunk: Vector3) {
-		this.chunk = chunk;
-		this.folder = new Instance("Folder");
-	}
+	constructor(private chunk: Vector3) {}
 
 	GenerateSurface() {
 		for (let x = 0; x < Chunk.CHUNK_SIZE.X; x++) {
