@@ -58,7 +58,7 @@ class GeneratorController implements OnStart {
 	}
 
 	static MineBlock(position: Vector3, damage: number) {
-		const key = GeneratorController.key(Chunk.InChunkPosition(position));
+		const key = tostring(Chunk.InChunkPosition(position));
 		const chunk = GeneratorController.chunks.get(key);
 
 		if (chunk) {
@@ -84,7 +84,7 @@ class GeneratorController implements OnStart {
 			for (let y = center.Y - GeneratorController.RANGE; y <= 0; y++) {
 				for (let z = center.Z - GeneratorController.RANGE; z <= center.Z + GeneratorController.RANGE; z++) {
 					const position = new Vector3(x, y, z);
-					const key = GeneratorController.key(position);
+					const key = tostring(position);
 
 					nextDesired.add(key);
 
@@ -143,7 +143,7 @@ class GeneratorController implements OnStart {
 
 			for (const dir of GeneratorController.DIRECTIONS) {
 				const neighbor = removed.position.add(dir);
-				const neighborChunk = GeneratorController.chunks.get(GeneratorController.key(neighbor));
+				const neighborChunk = GeneratorController.chunks.get(tostring(neighbor));
 				if (!neighborChunk) continue;
 
 				newChunk.AddNeighbor(neighborChunk);
@@ -166,10 +166,6 @@ class GeneratorController implements OnStart {
 		GeneratorController.queueToLoad.sort(
 			(a, b) => a.position.sub(center).Magnitude < b.position.sub(center).Magnitude,
 		);
-	}
-
-	private static key(position: Vector3) {
-		return tostring(position);
 	}
 }
 

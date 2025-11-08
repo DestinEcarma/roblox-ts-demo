@@ -53,7 +53,7 @@ class Chunk {
 		const chunkPosition = Chunk.InChunkPosition(position);
 
 		if (this.chunk !== chunkPosition) {
-			const key = Chunk.key(chunkPosition);
+			const key = tostring(chunkPosition);
 			const neighbor = this.neighbors.get(key);
 
 			if (neighbor) {
@@ -79,13 +79,13 @@ class Chunk {
 		const blockPosition = Block.InBlockPosition(position);
 
 		if (blockPosition.Y > 0) return;
-		if (this.generatedBlocks.has(Chunk.key(blockPosition))) return;
+		if (this.generatedBlocks.has(tostring(blockPosition))) return;
 
 		this.createBlock(position);
 	}
 
 	AddNeighbor(chunk: Chunk) {
-		const key = Chunk.key(chunk.chunk);
+		const key = tostring(chunk.chunk);
 		this.neighbors.set(key, chunk);
 
 		const list = this.pendingGenerate.get(key);
@@ -96,7 +96,7 @@ class Chunk {
 	}
 
 	MineBlock(position: Vector3, damage: number) {
-		const key = Chunk.key(Block.InBlockPosition(position));
+		const key = tostring(Block.InBlockPosition(position));
 		const block = this.blocks.get(key);
 
 		if (!block) {
@@ -145,7 +145,7 @@ class Chunk {
 
 	private createBlock(position: Vector3) {
 		const block = new Block(position, 100);
-		const key = Chunk.key(Block.InBlockPosition(position));
+		const key = tostring(Block.InBlockPosition(position));
 
 		this.generatedBlocks.set(key, true);
 
@@ -160,10 +160,6 @@ class Chunk {
 			block.setParent(this.folder);
 			this.blocks.set(key, block);
 		}
-	}
-
-	private static key(position: Vector3) {
-		return tostring(position);
 	}
 }
 
