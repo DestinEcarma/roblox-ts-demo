@@ -10,24 +10,21 @@ interface PendingMine {
 
 @Controller()
 class GeneratorController implements OnStart {
-	private static readonly RANGE = 4;
-	private static readonly MAX_LOADS_PER_STEP = 16;
+	private static readonly INNER_RANGE = 2;
+	private static readonly OUTER_RANGE = 4;
+	private static readonly MAX_OPS_PER_STEP = 2;
 
-	private static readonly DIRECTIONS = [
-		new Vector3(1, 0, 0),
-		new Vector3(-1, 0, 0),
-		new Vector3(0, 1, 0),
-		new Vector3(0, -1, 0),
-		new Vector3(0, 0, 1),
-		new Vector3(0, 0, -1),
-	];
+	private static readonly DIRECTIONS = [new Vector2(1, 0), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(0, -1)];
 
-	private static desired = new Set<string>();
-	private static lastChunkPos?: Vector3;
-	private static queueToLoad = new Array<{ key: string; position: Vector3 }>();
+	private static outerDesired = new Set<string>();
+	private static lastChunkPos?: Vector2;
+
+	private static queueToLoad = new Array<{ key: string; position: Vector2 }>();
 	private static queueToUnload = new Array<string>();
-	private static moveDebounce = false;
+	private static loadSeen = new Set<string>();
+	private static unloadSeen = new Set<string>();
 
+	private static moveDebounce = false;
 	private static pendingMine = new Map<string, PendingMine[]>();
 
 	static folder = new Instance("Folder", Workspace);
@@ -36,25 +33,18 @@ class GeneratorController implements OnStart {
 	onStart() {
 		RunService.Heartbeat.Connect(() => GeneratorController.processQueues());
 
-		character.Moved.Connect((worldPos) => {
+		character.Moved.Connect((position) => {
 			if (GeneratorController.moveDebounce) return;
 
 			GeneratorController.moveDebounce = true;
 			task.defer(() => (GeneratorController.moveDebounce = false));
 
-			const currentChunk = Chunk.InChunkPosition(worldPos);
-
+			const currentChunk = Chunk.InChunkPosition(position);
 			if (!GeneratorController.lastChunkPos || currentChunk !== GeneratorController.lastChunkPos) {
 				GeneratorController.lastChunkPos = currentChunk;
 				GeneratorController.recomputeDesired(currentChunk);
 			}
 		});
-
-		const startPos = Vector3.zero;
-		const startChunk = Chunk.InChunkPosition(startPos);
-
-		GeneratorController.lastChunkPos = startChunk;
-		GeneratorController.recomputeDesired(startChunk);
 	}
 
 	static MineBlock(position: Vector3, damage: number) {
@@ -75,97 +65,133 @@ class GeneratorController implements OnStart {
 		}
 	}
 
-	// TODO: Change rendering method to use Quadtree, not Octree since we need all Y-axis chunk to be loaded
-	// ERROR: Issue with current method causes the chunk to unload where the player is standing
-	private static recomputeDesired(center: Vector3) {
-		const nextDesired = new Set<string>();
+	private static recomputeDesired(center: Vector2) {
+		const evictSet = new Set<string>();
+		const loadSet = new Set<string>();
 
-		for (let x = center.X - GeneratorController.RANGE; x <= center.X + GeneratorController.RANGE; x++) {
-			for (let y = center.Y - GeneratorController.RANGE; y <= 0; y++) {
-				for (let z = center.Z - GeneratorController.RANGE; z <= center.Z + GeneratorController.RANGE; z++) {
-					const position = new Vector3(x, y, z);
-					const key = tostring(position);
+		for (let x = center.X - GeneratorController.OUTER_RANGE; x <= center.X + GeneratorController.OUTER_RANGE; x++) {
+			for (
+				let y = center.Y - GeneratorController.OUTER_RANGE;
+				y <= center.Y + GeneratorController.OUTER_RANGE;
+				y++
+			) {
+				evictSet.add(tostring(new Vector2(x, y)));
+			}
+		}
 
-					nextDesired.add(key);
+		for (let x = center.X - GeneratorController.INNER_RANGE; x <= center.X + GeneratorController.INNER_RANGE; x++) {
+			for (
+				let y = center.Y - GeneratorController.INNER_RANGE;
+				y <= center.Y + GeneratorController.INNER_RANGE;
+				y++
+			) {
+				const pos = new Vector2(x, y);
+				const key = tostring(pos);
+				loadSet.add(key);
 
-					const chunk = GeneratorController.chunks.get(key);
-
-					if (!chunk || !chunk.isLoaded()) {
-						GeneratorController.queueToLoad.push({ key, position });
+				const chunk = GeneratorController.chunks.get(key);
+				if (!chunk || !chunk.isLoaded()) {
+					if (!GeneratorController.loadSeen.has(key)) {
+						GeneratorController.queueToLoad.push({ key, position: pos });
+						GeneratorController.loadSeen.add(key);
 					}
 				}
 			}
 		}
 
 		for (const [key] of GeneratorController.chunks) {
-			if (!nextDesired.has(key)) GeneratorController.queueToUnload.push(key);
+			if (!evictSet.has(key) && !GeneratorController.unloadSeen.has(key)) {
+				GeneratorController.queueToUnload.push(key);
+				GeneratorController.unloadSeen.add(key);
+			}
 		}
 
-		GeneratorController.desired = nextDesired;
+		GeneratorController.outerDesired = evictSet;
 		GeneratorController.sortLoadQueueByDistance(center);
 	}
 
 	private static processQueues() {
-		let unloadBudget = math.floor(GeneratorController.MAX_LOADS_PER_STEP / 2);
+		const ops = GeneratorController.MAX_OPS_PER_STEP;
+		let unloadBudget = math.floor(ops / 2);
+		let loadBudget = ops - unloadBudget;
 
 		while (unloadBudget-- > 0 && GeneratorController.queueToUnload.size() > 0) {
 			const key = GeneratorController.queueToUnload.remove(0);
+			if (key === undefined) continue;
 
-			if (key !== undefined) {
-				const chunk = GeneratorController.chunks.get(key);
-				if (!chunk) continue;
-
-				chunk.unload();
+			if (GeneratorController.outerDesired.has(key)) {
+				GeneratorController.unloadSeen.delete(key);
+				continue;
 			}
-		}
 
-		let loadBudget = GeneratorController.MAX_LOADS_PER_STEP;
+			const chunk = GeneratorController.chunks.get(key);
+			if (!chunk) {
+				GeneratorController.unloadSeen.delete(key);
+				continue;
+			}
+
+			chunk.unload();
+			GeneratorController.unloadSeen.delete(key);
+		}
 
 		while (loadBudget-- > 0 && GeneratorController.queueToLoad.size() > 0) {
 			const removed = GeneratorController.queueToLoad.remove(0);
 			if (!removed) continue;
-			if (!GeneratorController.desired.has(removed.key)) continue;
 
-			const cached = GeneratorController.chunks.get(removed.key);
-			if (cached) {
-				if (!cached.isLoaded()) {
-					cached.load(GeneratorController.folder);
-				}
-
+			if (!GeneratorController.outerDesired.has(removed.key)) {
+				GeneratorController.loadSeen.delete(removed.key);
 				continue;
 			}
 
-			const newChunk = new Chunk(removed.position);
+			const chunk = GeneratorController.chunks.get(removed.key);
 
-			if (removed.position.Y === 0) {
-				newChunk.GenerateSurface();
+			if (!chunk) {
+				const newChunk = new Chunk(removed.position);
+
+				for (const dir of GeneratorController.DIRECTIONS) {
+					const neighbor = removed.position.add(dir);
+					const neighborChunk = GeneratorController.chunks.get(tostring(neighbor));
+					if (!neighborChunk) continue;
+
+					newChunk.AddNeighbor(neighborChunk);
+					neighborChunk.AddNeighbor(newChunk);
+				}
+
+				const list = GeneratorController.pendingMine.get(removed.key);
+
+				if (list && list.size() > 0) {
+					list.forEach(({ position, damage }) => newChunk.MineBlock(position, damage));
+					GeneratorController.pendingMine.delete(removed.key);
+				}
+
+				newChunk.load(GeneratorController.folder);
+				GeneratorController.chunks.set(removed.key, newChunk);
 			}
 
-			for (const dir of GeneratorController.DIRECTIONS) {
-				const neighbor = removed.position.add(dir);
-				const neighborChunk = GeneratorController.chunks.get(tostring(neighbor));
-				if (!neighborChunk) continue;
-
-				newChunk.AddNeighbor(neighborChunk);
-				neighborChunk.AddNeighbor(newChunk);
+			if (chunk && !chunk.isLoaded()) {
+				chunk.load(GeneratorController.folder);
 			}
 
-			const list = GeneratorController.pendingMine.get(removed.key);
-
-			if (list && list.size() > 0) {
-				list.forEach(({ position, damage }) => newChunk.MineBlock(position, damage));
-				GeneratorController.pendingMine.delete(removed.key);
-			}
-
-			newChunk.load(GeneratorController.folder);
-			GeneratorController.chunks.set(removed.key, newChunk);
+			GeneratorController.loadSeen.delete(removed.key);
 		}
 	}
 
-	private static sortLoadQueueByDistance(center: Vector3) {
-		GeneratorController.queueToLoad.sort(
-			(a, b) => a.position.sub(center).Magnitude < b.position.sub(center).Magnitude,
-		);
+	private static sortLoadQueueByDistance(center: Vector2) {
+		GeneratorController.queueToLoad.sort((a, b) => {
+			const aInner =
+				math.abs(a.position.X - center.X) <= GeneratorController.INNER_RANGE &&
+				math.abs(a.position.Y - center.Y) <= GeneratorController.INNER_RANGE;
+			const bInner =
+				math.abs(b.position.X - center.X) <= GeneratorController.INNER_RANGE &&
+				math.abs(b.position.Y - center.Y) <= GeneratorController.INNER_RANGE;
+
+			if (aInner !== bInner) return aInner;
+
+			const da = a.position.sub(center).Magnitude;
+			const db = b.position.sub(center).Magnitude;
+
+			return da < db;
+		});
 	}
 }
 

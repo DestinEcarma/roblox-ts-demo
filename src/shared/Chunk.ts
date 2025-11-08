@@ -2,14 +2,20 @@ import { Block } from "./Block";
 import { Workspace } from "@rbxts/services";
 
 class Chunk {
-	private static readonly CHUNK_SIZE = new Vector3(9, 9, 9);
-	private static readonly CHUNK_WORLD_SIZE = Chunk.CHUNK_SIZE.mul(Block.BLOCK_SIZE);
-	private static readonly HALF_CHUNK_WORLD_SIZE = Chunk.CHUNK_WORLD_SIZE.div(2);
-	private static readonly ORIGIN = new Vector3(
-		-Chunk.HALF_CHUNK_WORLD_SIZE.X,
-		-Chunk.CHUNK_WORLD_SIZE.Y,
-		-Chunk.HALF_CHUNK_WORLD_SIZE.Z,
+	private static readonly CHUNK_SIZE = new Vector2(9, 9);
+	private static readonly CHUNK_WORLD_SIZE = Chunk.CHUNK_SIZE.mul(
+		new Vector2(Block.BLOCK_SIZE.X, Block.BLOCK_SIZE.Z),
 	);
+	private static readonly CHUNK_WORLD_SIZE_VECTOR3 = new Vector3(
+		Chunk.CHUNK_WORLD_SIZE.X,
+		0,
+		Chunk.CHUNK_WORLD_SIZE.Y,
+	);
+	private static readonly HALF_CHUNK_WORLD_SIZE = Chunk.CHUNK_WORLD_SIZE_VECTOR3.div(2);
+
+	private static readonly ORIGIN = new Vector2(-Chunk.HALF_CHUNK_WORLD_SIZE.X, -Chunk.HALF_CHUNK_WORLD_SIZE.Z);
+	private static readonly ORIGIN_VECTOR3 = new Vector3(Chunk.ORIGIN.X, 0, Chunk.ORIGIN.Y);
+
 	private static readonly DIRECTIONS = [
 		new Vector3(1, 0, 0).mul(Block.BLOCK_SIZE),
 		new Vector3(-1, 0, 0).mul(Block.BLOCK_SIZE),
@@ -29,16 +35,15 @@ class Chunk {
 	private blocks = new Map<string, Block>();
 	private generatedBlocks = new Map<string, boolean>();
 
-	constructor(private chunk: Vector3) {}
+	constructor(private chunk: Vector2) {
+		const vector3Chunk = new Vector3(this.chunk.X, 0, this.chunk.Y);
 
-	GenerateSurface() {
 		for (let x = 0; x < Chunk.CHUNK_SIZE.X; x++) {
-			for (let z = 0; z < Chunk.CHUNK_SIZE.Z; z++) {
-				const chunkPosition = this.chunk.mul(Chunk.CHUNK_WORLD_SIZE);
-				const blockPosition = new Vector3(x, Chunk.CHUNK_SIZE.Y - 1, z)
-					.mul(Block.BLOCK_SIZE)
-					.add(Block.HALF_BLOCK_SIZE);
-				const position = Chunk.ORIGIN.add(chunkPosition.add(blockPosition));
+			for (let z = 0; z < Chunk.CHUNK_SIZE.Y; z++) {
+				const chunkPosition = vector3Chunk.mul(Chunk.CHUNK_WORLD_SIZE_VECTOR3);
+
+				const blockPosition = new Vector3(x, -1, z).mul(Block.BLOCK_SIZE).add(Block.HALF_BLOCK_SIZE);
+				const position = Chunk.ORIGIN_VECTOR3.add(chunkPosition.add(blockPosition));
 
 				this.createBlock(position);
 			}
@@ -129,7 +134,7 @@ class Chunk {
 	}
 
 	static InChunkPosition(position: Vector3) {
-		return position.sub(Chunk.ORIGIN).div(Chunk.CHUNK_WORLD_SIZE).Floor();
+		return new Vector2(position.X, position.Z).sub(Chunk.ORIGIN).div(Chunk.CHUNK_WORLD_SIZE).Floor();
 	}
 
 	private genereateNeighborBlocks(position: Vector3) {
