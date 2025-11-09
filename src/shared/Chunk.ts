@@ -162,16 +162,16 @@ class Chunk {
 
 		this.generatedBlocks.set(key, true);
 
-		// if (blockPosition.Y < 0) {
-		const density = this.caveGenerator.density(blockPosition);
+		if (blockPosition.Y < 0) {
+			const density = this.caveGenerator.density(blockPosition);
 
-		if (density < 0) {
-			this.pendingMine.delete(key);
-			this.genereateNeighborBlocks(position);
+			if (density < 0) {
+				this.pendingMine.delete(key);
+				this.genereateNeighborBlocks(position);
 
-			return;
+				return;
+			}
 		}
-		// }
 
 		const block = new Block(position, 100);
 
