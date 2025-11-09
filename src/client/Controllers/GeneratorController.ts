@@ -25,7 +25,6 @@ class GeneratorController implements OnStart, OnTick {
 	private static loadSeen = new Set<string>();
 	private static unloadSeen = new Set<string>();
 
-	private static moveDebounce = false;
 	private static pendingMine = new Map<string, PendingMine[]>();
 
 	static folder = new Instance("Folder", Workspace);
@@ -34,11 +33,13 @@ class GeneratorController implements OnStart, OnTick {
 	private static caveGenerator = new Perlin3DGenerator();
 
 	onStart() {
-		character.Moved.Connect((position) => {
-			if (GeneratorController.moveDebounce) return;
+		let moveDebounce = false;
 
-			GeneratorController.moveDebounce = true;
-			task.defer(() => (GeneratorController.moveDebounce = false));
+		character.Moved.Connect((position) => {
+			if (moveDebounce) return;
+
+			moveDebounce = true;
+			task.defer(() => (moveDebounce = false));
 
 			const currentChunk = Chunk.InChunkPosition(position);
 
