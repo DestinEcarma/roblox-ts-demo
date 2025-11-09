@@ -178,14 +178,17 @@ class Chunk {
 		const pendingDamage = this.pendingMine.get(key);
 
 		if (pendingDamage !== undefined) {
-			if (block.Mine(pendingDamage)) this.genereateNeighborBlocks(position);
 			this.pendingMine.delete(key);
+
+			if (block.Mine(pendingDamage)) {
+				this.genereateNeighborBlocks(position);
+
+				return;
+			}
 		}
 
-		if (block.Health > 0) {
-			block.setParent(this.folder);
-			this.blocks.set(key, block);
-		}
+		block.setParent(this.folder);
+		this.blocks.set(key, block);
 	}
 }
 

@@ -22,16 +22,18 @@ class Block {
 
 	constructor(
 		position: Vector3,
-		public Health: number,
+		private health: number,
 	) {
 		this.block.Position = position;
+		this.block.SetAttribute("Health", health);
 	}
 
 	Mine(damage: number) {
-		if (this.Health > 0) {
-			this.Health = math.clamp(this.Health - damage, 0, this.Health);
+		if (this.health > 0) {
+			this.health = math.clamp(this.health - damage, 0, this.health);
+			this.block.SetAttribute("Health", this.health);
 
-			if (this.Health === 0) {
+			if (this.health === 0) {
 				this.block.Destroy();
 				return true;
 			}
