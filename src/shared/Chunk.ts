@@ -1,4 +1,5 @@
 import { Block } from "./Block";
+import { CaveGenerator } from "./Perlin";
 import { Workspace } from "@rbxts/services";
 
 class Chunk {
@@ -35,7 +36,10 @@ class Chunk {
 	private blocks = new Map<string, Block>();
 	private generatedBlocks = new Map<string, boolean>();
 
-	constructor(private chunk: Vector2) {
+	constructor(
+		private chunk: Vector2,
+		private caveGenerator: CaveGenerator,
+	) {
 		const vector3Chunk = new Vector3(this.chunk.X, 0, this.chunk.Y);
 
 		for (let x = 0; x < Chunk.CHUNK_SIZE.X; x++) {
@@ -112,6 +116,14 @@ class Chunk {
 		this.genereateNeighborBlocks(position);
 	}
 
+	Destroy() {
+		this.pendingGenerate.clear();
+		this.pendingMine.clear();
+		this.neighbors.clear();
+		this.blocks.clear();
+		this.folder.Destroy();
+	}
+
 	// TODO: Remove this
 	setColor(color: Color3) {
 		const parent = this.folder.Parent;
@@ -145,10 +157,23 @@ class Chunk {
 	}
 
 	private createBlock(position: Vector3) {
-		const block = new Block(position, 100);
-		const key = tostring(Block.InBlockPosition(position));
+		const blockPosition = Block.InBlockPosition(position);
+		const key = tostring(blockPosition);
 
 		this.generatedBlocks.set(key, true);
+
+		// if (blockPosition.Y < 0) {
+		const density = this.caveGenerator.density(blockPosition);
+
+		if (density < 0) {
+			this.pendingMine.delete(key);
+			this.genereateNeighborBlocks(position);
+
+			return;
+		}
+		// }
+
+		const block = new Block(position, 100);
 
 		const pendingDamage = this.pendingMine.get(key);
 

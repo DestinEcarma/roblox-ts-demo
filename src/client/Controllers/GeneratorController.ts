@@ -1,7 +1,8 @@
 import { character } from "../Components/Character";
 import { Chunk } from "@/shared/Chunk";
-import { Controller, OnStart } from "@flamework/core";
-import { RunService, Workspace } from "@rbxts/services";
+import { Perlin3DGenerator } from "@/shared/Perlin";
+import { Controller, OnStart, OnTick } from "@flamework/core";
+import { Workspace } from "@rbxts/services";
 
 interface PendingMine {
 	position: Vector3;
@@ -30,6 +31,7 @@ class GeneratorController implements OnStart, OnTick {
 	static folder = new Instance("Folder", Workspace);
 	static chunks = new Map<string, Chunk>();
 
+	private static caveGenerator = new Perlin3DGenerator();
 
 	onStart() {
 		character.Moved.Connect((position) => {
@@ -39,6 +41,7 @@ class GeneratorController implements OnStart, OnTick {
 			task.defer(() => (GeneratorController.moveDebounce = false));
 
 			const currentChunk = Chunk.InChunkPosition(position);
+
 			if (!GeneratorController.lastChunkPos || currentChunk !== GeneratorController.lastChunkPos) {
 				GeneratorController.lastChunkPos = currentChunk;
 				GeneratorController.recomputeDesired(currentChunk);
@@ -48,6 +51,22 @@ class GeneratorController implements OnStart, OnTick {
 
 	onTick() {
 		GeneratorController.processQueues();
+	}
+
+	static Reset() {
+		for (const [, chunk] of GeneratorController.chunks) {
+			chunk.Destroy();
+		}
+
+		GeneratorController.outerDesired.clear();
+		GeneratorController.queueToLoad.clear();
+		GeneratorController.queueToUnload.clear();
+		GeneratorController.loadSeen.clear();
+		GeneratorController.unloadSeen.clear();
+		GeneratorController.pendingMine.clear();
+		GeneratorController.chunks.clear();
+
+		GeneratorController.recomputeDesired(GeneratorController.lastChunkPos ?? Vector2.zero);
 	}
 
 	static MineBlock(position: Vector3, damage: number) {
@@ -149,7 +168,7 @@ class GeneratorController implements OnStart, OnTick {
 			const chunk = GeneratorController.chunks.get(removed.key);
 
 			if (!chunk) {
-				const newChunk = new Chunk(removed.position);
+				const newChunk = new Chunk(removed.position, GeneratorController.caveGenerator);
 
 				for (const dir of GeneratorController.DIRECTIONS) {
 					const neighbor = removed.position.add(dir);
