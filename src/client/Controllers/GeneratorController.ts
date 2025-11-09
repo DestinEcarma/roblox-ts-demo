@@ -9,7 +9,7 @@ interface PendingMine {
 }
 
 @Controller()
-class GeneratorController implements OnStart {
+class GeneratorController implements OnStart, OnTick {
 	private static readonly INNER_RANGE = 2;
 	private static readonly OUTER_RANGE = 4;
 	private static readonly MAX_OPS_PER_STEP = 2;
@@ -30,9 +30,8 @@ class GeneratorController implements OnStart {
 	static folder = new Instance("Folder", Workspace);
 	static chunks = new Map<string, Chunk>();
 
-	onStart() {
-		RunService.Heartbeat.Connect(() => GeneratorController.processQueues());
 
+	onStart() {
 		character.Moved.Connect((position) => {
 			if (GeneratorController.moveDebounce) return;
 
@@ -45,6 +44,10 @@ class GeneratorController implements OnStart {
 				GeneratorController.recomputeDesired(currentChunk);
 			}
 		});
+	}
+
+	onTick() {
+		GeneratorController.processQueues();
 	}
 
 	static MineBlock(position: Vector3, damage: number) {

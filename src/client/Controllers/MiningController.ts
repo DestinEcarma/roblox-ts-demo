@@ -1,14 +1,18 @@
+import { character } from "../Components/Character";
 import { Mouse } from "../Components/Mouse";
 import { MiningEvent } from "../Components/Networks";
 import { GeneratorController } from "./GeneratorController";
-import { Controller, OnStart } from "@flamework/core";
-import { RunService, UserInputService, Workspace } from "@rbxts/services";
+import { InventoryController } from "./InventoryContoller";
+import { Controller, OnStart, OnTick } from "@flamework/core";
+import { UserInputService, Workspace } from "@rbxts/services";
 
 @Controller()
-class MiningController implements OnStart {
+class MiningController implements OnStart, OnTick {
 	private static raycastParam = new RaycastParams();
 
 	private static highlight = new Instance("SelectionBox");
+
+	private static mineDebounce = false;
 
 	static {
 		this.raycastParam.FilterDescendantsInstances = [GeneratorController.folder];
@@ -22,28 +26,30 @@ class MiningController implements OnStart {
 		MiningEvent.Mined.connect((position, damage) => {
 			GeneratorController.MineBlock(position, damage);
 		});
+	}
 
-		let mineDebounce = false;
+	onTick() {
+		if (!character.Model?.FindFirstChildOfClass("Tool")?.HasTag("Pickaxe")) {
+			MiningController.highlight.Adornee = undefined;
+			return;
+		}
 
-		RunService.Heartbeat.Connect(() => {
-			const block = Mouse.GetWorldInstance(500, MiningController.raycastParam);
+		const block = Mouse.GetWorldInstance(500, MiningController.raycastParam);
 
-			MiningController.highlight.Adornee = block;
+		MiningController.highlight.Adornee = block;
 
-			if (mineDebounce) return;
-			if (!block) return;
-			if (!UserInputService.IsMouseButtonPressed(Enum.UserInputType.MouseButton1)) return;
+		if (MiningController.mineDebounce) return;
+		if (!block) return;
+		if (!UserInputService.IsMouseButtonPressed(Enum.UserInputType.MouseButton1)) return;
 
-			mineDebounce = true;
-			task.defer(() => {
-				// TODO: Use mining speed
-				task.wait();
-				mineDebounce = false;
-			});
-
-			Mouse.RaycastDebugPoint(block.Position);
-			MiningController.Mine(block.Position);
+		MiningController.mineDebounce = true;
+		task.defer(() => {
+			task.wait(InventoryController.CurrentPickaxe?.speed);
+			MiningController.mineDebounce = false;
 		});
+
+		Mouse.RaycastDebugPoint(block.Position);
+		MiningController.Mine(block.Position);
 	}
 
 	private static Mine(position: Vector3) {
