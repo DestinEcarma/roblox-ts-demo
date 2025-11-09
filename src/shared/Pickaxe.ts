@@ -1,20 +1,22 @@
 interface DeserializedPickaxe {
 	name: string;
 	damage: number;
+	speed: number;
 }
 
 class Pickaxe {
 	constructor(
 		readonly name: string,
 		readonly damage: number,
+		readonly speed: number,
 	) {}
 
-	static Deserialize({ name, damage }: Pickaxe) {
-		return { name, damage };
+	static Deserialize({ name, damage, speed }: Pickaxe): DeserializedPickaxe {
+		return { name, damage, speed };
 	}
 
-	static Serialize({ name, damage }: DeserializedPickaxe) {
-		new Pickaxe(name, damage);
+	static Serialize({ name, damage, speed }: DeserializedPickaxe) {
+		return new Pickaxe(name, damage, speed);
 	}
 }
 

@@ -11,10 +11,11 @@ class InventoryService implements OnStart {
 
 	private static onPlayerJoined = (player: Player) => {
 		// TODO: Remove this
-		const pickaxe = new Pickaxe("Stone Pickaxe", math.huge);
+		const pickaxe = new Pickaxe("Stone Pickaxe", math.huge, 0);
 		const tool = new Instance("Tool");
 
 		tool.Name = pickaxe.name;
+		tool.AddTag("Pickaxe");
 
 		MiningService.setPickaxe(player, pickaxe);
 
