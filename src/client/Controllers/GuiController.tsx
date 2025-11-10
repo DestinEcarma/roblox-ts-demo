@@ -1,4 +1,5 @@
 import { Coordinate } from "../UI/Components/Coordinate";
+import { TeleportSurface } from "../UI/Components/TeleportSurface";
 import { Controller, OnStart } from "@flamework/core";
 import React from "@rbxts/react";
 import { createPortal, createRoot } from "@rbxts/react-roblox";
@@ -14,6 +15,7 @@ class GuiController implements OnStart {
 		root.render(
 			createPortal(
 				<screengui ResetOnSpawn={false}>
+					<TeleportSurface />
 					<Coordinate />
 				</screengui>,
 				this.playerGui,
