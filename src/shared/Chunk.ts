@@ -58,35 +58,11 @@ class Chunk {
 		const chunkPosition = Chunk.InChunkPosition(position);
 
 		if (this.chunk !== chunkPosition) {
-			const key = tostring(chunkPosition);
-			const neighbor = this.neighbors.get(key);
-
-			if (neighbor) {
-				neighbor.GenerateBlockLocal(position);
-			} else {
-				let list = this.pendingGenerate.get(key);
-
-				if (!list) {
-					list = [];
-					this.pendingGenerate.set(key, list);
-				}
-
-				list.push(position);
-			}
-
+			this.generateForeigneBlock(position, chunkPosition);
 			return;
 		}
 
-		this.GenerateBlockLocal(position);
-	}
-
-	GenerateBlockLocal(position: Vector3) {
-		const blockPosition = Block.InBlockPosition(position);
-
-		if (blockPosition.Y > 0) return;
-		if (this.generatedBlocks.has(tostring(blockPosition))) return;
-
-		this.createBlock(position);
+		this.generateBlockLocal(position);
 	}
 
 	AddNeighbor(chunk: Chunk) {
@@ -96,7 +72,7 @@ class Chunk {
 		const list = this.pendingGenerate.get(key);
 		if (!(list && list.size() > 0)) return;
 
-		list.forEach((position) => chunk.GenerateBlockLocal(position));
+		list.forEach((position) => chunk.generateBlockLocal(position));
 		this.pendingGenerate.delete(key);
 	}
 
@@ -149,10 +125,37 @@ class Chunk {
 		return new Vector2(position.X, position.Z).sub(Chunk.ORIGIN).div(Chunk.CHUNK_WORLD_SIZE).Floor();
 	}
 
+	private generateBlockLocal(position: Vector3) {
+		const blockPosition = Block.InBlockPosition(position);
+
+		if (blockPosition.Y > 0) return;
+		if (this.generatedBlocks.has(tostring(blockPosition))) return;
+
+		this.createBlock(position);
+	}
+
 	private genereateNeighborBlocks(position: Vector3) {
 		for (const dir of Chunk.DIRECTIONS) {
 			const neighborPosition = position.add(dir);
 			this.GenerateBlock(neighborPosition);
+		}
+	}
+
+	private generateForeigneBlock(position: Vector3, chunkPosition: Vector2) {
+		const key = tostring(chunkPosition);
+		const neighbor = this.neighbors.get(key);
+
+		if (neighbor) {
+			neighbor.generateBlockLocal(position);
+		} else {
+			let list = this.pendingGenerate.get(key);
+
+			if (!list) {
+				list = [];
+				this.pendingGenerate.set(key, list);
+			}
+
+			list.push(position);
 		}
 	}
 
@@ -167,12 +170,48 @@ class Chunk {
 
 			if (density < 0) {
 				this.pendingMine.delete(key);
-				this.genereateNeighborBlocks(position);
+				task.defer(() => this.continueGeneratingAir(position));
 
 				return;
 			}
 		}
 
+		this.forceCreateBlock(position);
+	}
+
+	private continueGeneratingAir(position: Vector3) {
+		const toCheck = Chunk.DIRECTIONS.map((dir) => position.add(dir));
+
+		while (toCheck.size() > 0) {
+			const position = toCheck.pop()!;
+			const chunkPosition = Chunk.InChunkPosition(position);
+
+			if (this.chunk !== chunkPosition) {
+				this.generateForeigneBlock(position, chunkPosition);
+				continue;
+			}
+
+			const blockPosition = Block.InBlockPosition(position);
+			const key = tostring(blockPosition);
+
+			if (blockPosition.Y > 0) continue;
+			if (this.generatedBlocks.has(key)) continue;
+
+			this.generatedBlocks.set(key, true);
+
+			const density = this.caveGenerator.density(blockPosition);
+
+			if (density < 0) {
+				Chunk.DIRECTIONS.forEach((dir) => toCheck.push(position.add(dir)));
+				this.pendingMine.delete(key);
+			} else {
+				this.forceCreateBlock(position);
+			}
+		}
+	}
+
+	private forceCreateBlock(position: Vector3) {
+		const key = tostring(Block.InBlockPosition(position));
 		const block = new Block(position, 100);
 
 		const pendingDamage = this.pendingMine.get(key);
@@ -181,8 +220,6 @@ class Chunk {
 			this.pendingMine.delete(key);
 
 			if (block.Mine(pendingDamage)) {
-				this.genereateNeighborBlocks(position);
-
 				return;
 			}
 		}
