@@ -113,11 +113,9 @@ class GeneratorController implements OnStart, OnTick {
 				loadSet.add(key);
 
 				const chunk = GeneratorController.chunks.get(key);
-				if (!chunk || !chunk.isLoaded()) {
-					if (!GeneratorController.loadSeen.has(key)) {
-						GeneratorController.queueToLoad.push({ key, position: pos });
-						GeneratorController.loadSeen.add(key);
-					}
+				if ((!chunk || !chunk.isLoaded()) && !GeneratorController.loadSeen.has(key)) {
+					GeneratorController.queueToLoad.push({ key, position: pos });
+					GeneratorController.loadSeen.add(key);
 				}
 			}
 		}
@@ -158,21 +156,20 @@ class GeneratorController implements OnStart, OnTick {
 		}
 
 		while (loadBudget-- > 0 && GeneratorController.queueToLoad.size() > 0) {
-			const removed = GeneratorController.queueToLoad.remove(0);
-			if (!removed) continue;
+			const { key, position } = GeneratorController.queueToLoad.remove(0)!;
 
-			if (!GeneratorController.outerDesired.has(removed.key)) {
-				GeneratorController.loadSeen.delete(removed.key);
+			if (!GeneratorController.outerDesired.has(key)) {
+				GeneratorController.loadSeen.delete(key);
 				continue;
 			}
 
-			const chunk = GeneratorController.chunks.get(removed.key);
+			const chunk = GeneratorController.chunks.get(key);
 
 			if (!chunk) {
-				const newChunk = new Chunk(removed.position, GeneratorController.caveGenerator);
+				const newChunk = new Chunk(position, GeneratorController.caveGenerator);
 
 				for (const dir of GeneratorController.DIRECTIONS) {
-					const neighbor = removed.position.add(dir);
+					const neighbor = position.add(dir);
 					const neighborChunk = GeneratorController.chunks.get(tostring(neighbor));
 					if (!neighborChunk) continue;
 
@@ -180,22 +177,22 @@ class GeneratorController implements OnStart, OnTick {
 					neighborChunk.AddNeighbor(newChunk);
 				}
 
-				const list = GeneratorController.pendingMine.get(removed.key);
+				const list = GeneratorController.pendingMine.get(key);
 
 				if (list && list.size() > 0) {
 					list.forEach(({ position, damage }) => newChunk.MineBlock(position, damage));
-					GeneratorController.pendingMine.delete(removed.key);
+					GeneratorController.pendingMine.delete(key);
 				}
 
 				newChunk.load(GeneratorController.folder);
-				GeneratorController.chunks.set(removed.key, newChunk);
+				GeneratorController.chunks.set(key, newChunk);
 			}
 
 			if (chunk && !chunk.isLoaded()) {
 				chunk.load(GeneratorController.folder);
 			}
 
-			GeneratorController.loadSeen.delete(removed.key);
+			GeneratorController.loadSeen.delete(key);
 		}
 	}
 
